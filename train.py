@@ -7,7 +7,7 @@ from torch import optim
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(precision=8)
 
-from toolkits.data_loader import JSONFileDataLoader, JSONTestFileDataLoader
+from toolkits.data_loader import JSONFileDataLoader
 from toolkits.framework import FewShotREFramework
 
 # All models
@@ -40,7 +40,7 @@ print('seed: ', seed)
 def main():
     parser = argparse.ArgumentParser(
         description='Multi-Level Matching and Aggregation Network for Few-Shot Relation Classification')
-    parser.add_argument('--model', type=str, default='pr', help='Model name')
+    parser.add_argument('--model', type=str, default='base', help='Model name')
     parser.add_argument('--encoder', type=str, default='cnn', help='Encoder name')
     parser.add_argument('--train_iter', type=int, default=50000, help='training iterations')
     parser.add_argument('--N_for_train', type=int, default=10, help='Num of classes for each batch for training')
