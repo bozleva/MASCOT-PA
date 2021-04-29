@@ -11,7 +11,9 @@
     |--data
         |--glove.6B.50d.json  
         |--glove.local.50d.json  
-        |--train.json  
+        |--train.json 
+        |--train_acd.json
+        |--test_acd.json 
         |--val.json  
         |--val_pubmed.json  
     |--models
