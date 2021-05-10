@@ -18,7 +18,4 @@ class Encoder(nn.Module):
 
     def forward(self, inputs):
         inputs = self.transformer_encoder(inputs)
-        x = self.conv(inputs.transpose(1, 2))
-        x = F.relu(x)
-        x = self.pool(x)
-        return x.squeeze(2)
+        return inputs

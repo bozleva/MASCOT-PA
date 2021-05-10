@@ -19,11 +19,4 @@ class Encoder(nn.Module):
 
     def forward(self, inputs):
         inputs = self.BRANEncoder(inputs)
-        inputs = self.cnn(inputs)
         return inputs
-
-    def cnn(self, inputs):
-        x = self.conv(inputs.transpose(1, 2))
-        x = F.relu(x)
-        x = self.pool(x)
-        return x.squeeze(2) # n x hidden_size
