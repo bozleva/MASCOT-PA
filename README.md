@@ -2,9 +2,9 @@
 
 **model evaluation performance:** 
 
-| 5-way-1-shot  | 5-way-5-shot | 10-way-1-shot | 10-way-5-shot |
-| :----: | :----: | :----: | :----: |
-| 81.28      | 89.25       |69.03       |80.65       | 
+| Dataset  |  5-way-1-shot  | 5-way-5-shot | 10-way-1-shot | 10-way-5-shot |
+| :----: | :----: | :----: | :----: | :----: |
+| FelRel | 81.28      | 89.25       |69.03       |80.65       | 
 
 **file structure:**  
 
