@@ -3,6 +3,9 @@ import torch
 import numpy as np
 import sys
 import os
+import json
+from urllib import request
+import zipfile
 from torch import optim
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(precision=8)
@@ -35,7 +38,8 @@ torch.cuda.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 print('seed: ', seed)
-
+# all data store path
+data_path = './data/'
 
 def main():
     parser = argparse.ArgumentParser(
@@ -48,14 +52,15 @@ def main():
     parser.add_argument('--K', type=int, default=1, help='Num of instances for each class in the support set')
     parser.add_argument('--Q', type=int, default=5, help='Num of instances for each class in the query set')
     parser.add_argument('--na_rate', type=int, default=0, help='NA rate (NA = Q * na_rate)')
-    parser.add_argument('--batch', type=int, default=1, help='batch size')
+    parser.add_argument('--batch', type=int, default=2, help='batch size')
     parser.add_argument('--max_length', type=int, default=40, help='max length of sentence')
     parser.add_argument('--learning_rate', type=float, default=1e-1, help='initial learning rate')
     parser.add_argument('--load_model', type=str, default=None, help='load pre-trained model')
     parser.add_argument('--save_model', type=str, default='checkpoint/Mascot.tar', help='save trained model path')
     parser.add_argument('--only_test', action='store_true', help='only test')
+    parser.add_argument('--train_file', type=str, default='train', help='training file')
     parser.add_argument('--test_file', type=str, default='val', help='test file')
-    parser.add_argument('--glove', default='pre_trained', help='local or pre_trained')
+    parser.add_argument('--glove', default='pre_trained', help='acd, local or pre_trained')
     parser.add_argument('--reprocess', action='store_true', help='if glove option been changed, reprocess should be True')
     parser.add_argument('--hidden_size', default=60, type=int, help='hidden size')
     parser.add_argument('--optim', type=str, default='SGD', help='optimizer')
@@ -74,21 +79,51 @@ def main():
     elif args.optim == 'Adam':
         optims = optim.Adam
 
-    if not args.only_test:
-        test_file = 'val'
-    else:
-        test_file = args.test_file
+    train_file = data_path + args.train_file + '.json'
+    test_file = data_path + args.test_file + '.json'
 
     if args.glove == "pre_trained":
-        glove_path = './data/glove.6B.50d.json'
+        glove_path = data_path + 'glove.6B.50d.json'
     elif args.glove == "local":
-        glove_path = './data/glove.local.50d.json'
+        glove_path = data_path + 'glove.local.50d.json'
+    elif args.glove == "acd":
+        glove_path = data_path + 'glove.acd.50d.json'
+    elif os.path.exists(data_path + 'glove.' + args.glove + '.50d.json'):
+        glove_path = data_path + 'glove.' + args.glove + '.50d.json'
     else:
         raise RuntimeError("glove option error")
+    # Automatic download the FewRel dataset
+    if (not os.path.exists(data_path + 'train.json')) or (not os.path.exists(test_file)):
+        print("Downloading the FewRel dataset:")
+        fewrel_train = "https://raw.githubusercontent.com/thunlp/FewRel/master/data/train_wiki.json"
+        fewrel_test = "https://raw.githubusercontent.com/thunlp/FewRel/master/data/val_wiki.json"
+        f_train = request.urlopen(fewrel_train)
+        with open(data_path + 'train.json', 'wb') as fw:
+            fw.write(f_train.read())
+        f_test = request.urlopen(fewrel_test)
+        with open(data_path + 'val.json', 'wb') as fw:
+            fw.write(f_test.read())
 
-    train_data_loader = JSONFileDataLoader('./data/train.json', glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
-    val_data_loader = JSONFileDataLoader('./data/' + test_file + '.json', glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
-    test_data_loader = JSONFileDataLoader('./data/' + test_file + '.json', glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
+    # Automatic download the word vector file
+    if not os.path.exists(glove_path):
+        if not os.path.exists(data_path + 'glove.zip'):
+            print("Downloading the glove word vector")
+            glove_url = "https://nlp.stanford.edu/data/glove.6B.zip"
+            g_f = request.urlopen(glove_url)
+            with open(data_path + 'glove.zip', 'wb') as fw:
+                fw.write(g_f.read())
+        zip_file = zipfile.ZipFile(data_path + 'glove.zip')
+        zip_file.extractall(data_path)
+        zip_file.close()
+
+        fp = open(data_path + 'glove.6B.50d.txt', 'r', encoding='utf8')
+        glove_dict = [{'word': line.split()[0], 'vec': [float(num) for num in line.split()[1:]]}
+                      for line in fp.read().split('\n') if len(line) > 0]
+        json.dump(glove_dict, open(data_path + 'glove.6B.50d.json', 'w', encoding='utf8'))
+
+    train_data_loader = JSONFileDataLoader(train_file, glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
+    val_data_loader = JSONFileDataLoader(test_file, glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
+    test_data_loader = JSONFileDataLoader(test_file, glove_path, na_rate=args.na_rate, Q=args.Q, max_length=args.max_length, reprocess=args.reprocess)
 
     if args.encoder == "mascot":
         encoder = MASCOTEncoder
@@ -98,6 +133,8 @@ def main():
         encoder = BRANEncoder
     elif args.encoder == "te":
         encoder = TransformerEncoder
+    elif args.encoder == "mlman":
+        encoder = None
     else:
         raise RuntimeError("incorrect encoder name")
 

@@ -23,7 +23,7 @@ class MLMAN(nn.Module):
         self.conv = nn.Conv2d(1, self.hidden_size*2, kernel_size=(3, self.word_embedding_dim), padding=(1, 0))
         self.proj = nn.Linear(self.hidden_size*8, self.hidden_size)
         self.lstm_enhance = nn.LSTM(input_size=self.hidden_size, hidden_size=self.hidden_size, bidirectional=True, batch_first=True)
-        self.multilayer = nn.Sequential(nn.Linear(self.hidden_size*4, self.hidden_size), nn.ReLU(), nn.Linear(self.hidden_size, 1))
+        self.multilayer = nn.Sequential(nn.Linear(self.hidden_size*8, self.hidden_size), nn.ReLU(), nn.Linear(self.hidden_size, 1))
         self.drop = drop
         self.norm1 = nn.LayerNorm(self.word_embedding_dim)
         self.norm2 = nn.LayerNorm(self.word_embedding_dim * 2)
