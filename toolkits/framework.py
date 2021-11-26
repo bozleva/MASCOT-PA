@@ -153,6 +153,49 @@ class FewShotREFramework:
             iter_sample += 1
         return iter_right / iter_sample
 
+    def analyze(self, model, B, N, K, Q, eval_iter, ckpt=None):
+        '''
+        model: a FewShotREModel instance
+        B: Batch size
+        N: Num of classes for each batch
+        K: Num of instances for each class in the support set
+        Q: Num of instances for each class in the query set
+        eval_iter: Num of iterations
+        ckpt: Checkpoint path. Set as None if using current model parameters.
+        return: Accuracy
+        '''
+        print("")
+        if ckpt is None:
+            eval_dataset = self.test_data_loader
+        else:
+            checkpoint = self.__load_model__(ckpt)
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
+            eval_dataset = self.test_data_loader
+        model.eval()
+
+        iter_right = 0.0
+        iter_sample = 0.0
+        pred_list = []
+        lable_list = []
+        class_id_list = []
+        for it in range(eval_iter):
+            support, query, label, class_id = eval_dataset.next_batch(B, N, K, Q)
+            _, pred, _ = model(support, query, N, K, Q)
+            right = model.accuracy(pred, label)
+            iter_right += right.item()
+            iter_sample += 1
+            pred_list.append(pred.tolist())
+            lable_list.append(label.tolist())
+            class_id_list.append(class_id.tolist())
+
+        print("test accuracy: ", iter_right / iter_sample)
+        return {
+            'pred': pred_list,
+            'label': lable_list,
+            'id': class_id_list,
+            'id2class': eval_dataset.id_class_dict
+        }
+
     def test_output(self, model, B, N, K, Q, ckpt=None):
         print("")
         if ckpt is None:

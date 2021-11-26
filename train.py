@@ -42,15 +42,15 @@ print('seed: ', seed)
 data_path = './data/'
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Multi-Level Matching and Aggregation Network for Few-Shot Relation Classification')
+    parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='base', help='Model name')
     parser.add_argument('--encoder', type=str, default='cnn', help='Encoder name')
     parser.add_argument('--train_iter', type=int, default=50000, help='training iterations')
+    parser.add_argument('--val_step', type=int, default=1000, help='eval val_iter')
     parser.add_argument('--N_for_train', type=int, default=10, help='Num of classes for each batch for training')
     parser.add_argument('--N_for_test', type=int, default=5, help='Num of classes for each batch for test')
     parser.add_argument('--K', type=int, default=1, help='Num of instances for each class in the support set')
-    parser.add_argument('--Q', type=int, default=5, help='Num of instances for each class in the query set')
+    parser.add_argument('--Q', type=int, default=1, help='Num of instances for each class in the query set')
     parser.add_argument('--na_rate', type=int, default=0, help='NA rate (NA = Q * na_rate)')
     parser.add_argument('--batch', type=int, default=2, help='batch size')
     parser.add_argument('--max_length', type=int, default=40, help='max length of sentence')
@@ -70,7 +70,7 @@ def main():
     print(args)
 
     print("{}-way(train)-{}-way(test)-{}-shot with batch {} Few-Shot Relation Classification"
-          .format(args.N_for_train, args.N_for_test, args.K, args.Q))
+          .format(args.N_for_train, args.N_for_test, args.K, args.batch))
     print("Model: {}".format(args.model))
     if args.gpu != None:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -167,7 +167,7 @@ def main():
             model, args.batch, N_for_train=args.N_for_train, N_for_eval=args.N_for_test,
             K=args.K, Q=args.Q, learning_rate=args.learning_rate,
             pretrain_model=args.load_model, save_model=args.save_model, optimizer=optims,
-            train_iter=args.train_iter, val_iter=1000, val_step=1000, test_iter=2000
+            train_iter=args.train_iter, val_iter=1000, val_step=args.val_step, test_iter=2000
         )
     else:
         model = model.cuda()
